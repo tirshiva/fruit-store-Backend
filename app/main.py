@@ -5,7 +5,7 @@ from app.routes import product, order, discount
 
 app = FastAPI(
     title="Fruits & Vegetables Store API",
-    version="1.0.0",
+    version="1.0.1",
     description="Backend service for products, orders, and discounts"
 )
 

@@ -17,6 +17,7 @@ class Product(Base):
         String, primary_key=True, default=lambda: str(uuid.uuid4())
     )
     name: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    # Stores either a public URL or a served path like /uploads/products/<file>
     image: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     price_per_kg: Mapped[float] = mapped_column(Float, nullable=False)
     in_stock: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
