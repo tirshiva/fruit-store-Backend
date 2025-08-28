@@ -54,7 +54,7 @@ def list_products(db: Session = Depends(get_db)):
 @router.post("/api/products", response_model=ApiResponse[ProductOut], status_code=status.HTTP_201_CREATED)
 def create_product(
     name: str = Form(...),
-    price_per_kg: float = Form(..., alias="pricePerKg"),
+    price_per_kg: float = Form(..., alias="price_per_kg"),
     in_stock: bool = Form(True, alias="inStock"),
     image_file: Optional[UploadFile] = File(None),
     image: Optional[str] = Form(None),  # URL or relative path
@@ -102,7 +102,7 @@ def update_product(
     if payload.image is None and payload.price_per_kg is None and payload.in_stock is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least one of pricePerKg, image, inStock must be provided",
+            detail="At least one of price_per_kg, image, in_stock must be provided",
         )
 
     if payload.image is not None:
