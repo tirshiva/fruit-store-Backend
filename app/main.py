@@ -3,6 +3,7 @@ from app.db.session import engine
 from app.db.base import Base
 from app.routes import product, order, discount
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(
     title="Fruits & Vegetables Store API",
@@ -24,6 +25,9 @@ Base.metadata.create_all(bind=engine)
 app.include_router(product.router)
 app.include_router(order.router)
 app.include_router(discount.router)
+
+# To mount static files to server uploaded images
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Health check
 @app.get("/health")
