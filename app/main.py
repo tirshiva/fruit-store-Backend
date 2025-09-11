@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from pathlib import Path
 from app.db.session import engine
 from app.db.base import Base
 from app.routes import product, order, discount
@@ -27,7 +28,11 @@ app.include_router(order.router)
 app.include_router(discount.router)
 
 # To mount static files to server uploaded images
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+# Use absolute path for static mount to avoid CWD issues
+BASE_DIR = Path(__file__).resolve().parents[2]
+UPLOAD_DIR = (BASE_DIR / "uploads").resolve()
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 # Health check
 @app.get("/health")
