@@ -42,6 +42,33 @@ def _save_image(file: UploadFile, subdir: Path = PRODUCTS_SUBDIR) -> str:
     return f"/uploads/{subdir.relative_to(UPLOAD_ROOT)}/{unique_name}"
 
 
+def _delete_local_image_if_owned(image_path: Optional[str]) -> None:
+    """
+    Delete an image file from disk if it resides under our uploads/products directory.
+    Accepts public paths like "/uploads/products/<file>" and ignores external URLs.
+    """
+    if not image_path:
+        return
+    try:
+        # Only handle our served uploads path
+        if not image_path.startswith("/uploads/"):
+            return
+        # Normalize to filesystem path under uploads root
+        # Example: "/uploads/products/abc.jpg" -> uploads/products/abc.jpg
+        rel_part = image_path.lstrip("/").split("/", 1)[1] if "/" in image_path.lstrip("/") else ""
+        fs_path = UPLOAD_ROOT / rel_part
+        # Restrict deletion to the products subdirectory
+        try:
+            fs_path_relative_to_products = fs_path.resolve().relative_to(PRODUCTS_SUBDIR.resolve())
+        except Exception:
+            return
+        if fs_path.exists() and fs_path.is_file():
+            fs_path.unlink(missing_ok=True)
+    except Exception:
+        # Best-effort cleanup; do not block deletion on file errors
+        pass
+
+
 @router.get("/api/products", response_model=ApiResponse[List[ProductOut]])
 def list_products(db: Session = Depends(get_db)):
     products = db.query(Product).all()
@@ -140,6 +167,8 @@ def delete_product(product_id: str, db: Session = Depends(get_db)):
     product = db.get(Product, product_id)
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    # Best-effort remove associated local image file if managed by us
+    _delete_local_image_if_owned(product.image)
     db.delete(product)
     db.commit()
     return success_response("Product deleted successfully", {"id": product_id})
