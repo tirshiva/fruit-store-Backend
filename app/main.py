@@ -4,7 +4,7 @@ from app.db.base import Base
 from app.routes import product, order, discount
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+from app.utils import ProxyHeaderMiddleware
 
 app = FastAPI(
     title="Fruits & Vegetables Store API",
@@ -12,11 +12,7 @@ app = FastAPI(
     description="Backend service for products, orders, and discounts"
 )
 
-# Respect X-Forwarded-* headers from reverse proxies (e.g., Nginx, Cloudflare)
-app.add_middleware(
-    ProxyHeadersMiddleware,
-    trusted_hosts="*",  # Consider restricting to known proxy IPs/hosts in production
-)
+app.add_middleware(ProxyHeaderMiddleware, trust=True)
 
 app.add_middleware(
     CORSMiddleware,
