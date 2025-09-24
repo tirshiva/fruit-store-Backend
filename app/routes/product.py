@@ -135,12 +135,19 @@ def update_product(
     if not product:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
-    if payload.image is None and payload.price_per_kg is None and payload.in_stock is None:
+    if (
+        payload.name is None
+        and payload.image is None
+        and payload.price_per_kg is None
+        and payload.in_stock is None
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="At least one of price_per_kg, image, in_stock must be provided",
+            detail="At least one of name, price_per_kg, image, in_stock must be provided",
         )
 
+    if payload.name is not None:
+        product.name = payload.name
     if payload.image is not None:
         product.image = payload.image
     if payload.price_per_kg is not None:

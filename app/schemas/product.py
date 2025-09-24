@@ -17,6 +17,7 @@ class ProductCreate(ProductBase):
 
 
 class ProductUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=2)
     image: Optional[str] = None
     price_per_kg: Optional[float] = Field(None, gt=0, alias="price_per_kg")
     in_stock: Optional[bool] = Field(None, alias="in_stock")
@@ -25,8 +26,8 @@ class ProductUpdate(BaseModel):
 
     @classmethod
     def validate_non_empty(cls, values):
-        if not any(values.get(k) is not None for k in ["image", "price_per_kg", "in_stock"]):
-            raise ValueError("At least one of price_per_kg, image, in_stock must be provided")
+        if not any(values.get(k) is not None for k in ["name", "image", "price_per_kg", "in_stock"]):
+            raise ValueError("At least one of name, price_per_kg, image, in_stock must be provided")
         return values
 
 
