@@ -53,3 +53,13 @@ def update_order_status(order_id: str, payload: OrderStatusUpdate, db: Session =
     db.commit()
     db.refresh(order)
     return success_response("Order updated successfully", OrderOut.model_validate(order))
+
+@router.delete("/api/orders/{order_id}", response_model=ApiResponse[dict])
+def delete_order(order_id: str, db: Session = Depends(get_db)):
+    order = db.get(Order, order_id)
+    if not order:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    
+    db.delete(order)
+    db.commit()
+    return success_response("Order deleted successfully", {"id": order_id})
