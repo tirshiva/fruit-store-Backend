@@ -1,7 +1,0 @@
-__pycache__/
-*.pyc
-.env
-.venv/
-.env.*
-/home/shivanshu-tiwari/Downloads/fruit-store-Backend-main/fruit_store.db
-venv/
