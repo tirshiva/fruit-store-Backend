@@ -4,3 +4,4 @@ __pycache__/
 .venv/
 .env.*
 /home/shivanshu-tiwari/Downloads/fruit-store-Backend-main/fruit_store.db
+venv/
