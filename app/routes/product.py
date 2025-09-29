@@ -2,7 +2,7 @@ from typing import List, Optional
 from pathlib import Path
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
 
 from app.utils.deps import get_db
@@ -42,6 +42,26 @@ def _save_image(file: UploadFile, subdir: Path = PRODUCTS_SUBDIR) -> str:
     return f"/uploads/{subdir.relative_to(UPLOAD_ROOT)}/{unique_name}"
 
 
+def _resolve_public_image_url(request: Request, image_value: Optional[str]) -> Optional[str]:
+    """
+    Convert a stored image field into an absolute public URL.
+
+    Rules:
+    - If image is None -> return None
+    - If image starts with "http" (already an absolute URL) -> return as is
+    - If image starts with "/uploads/" -> prefix with the current request base (scheme+host)
+    - Otherwise return as is
+    """
+    if not image_value:
+        return image_value
+    if image_value.startswith("http://") or image_value.startswith("https://"):
+        return image_value
+    if image_value.startswith("/uploads/"):
+        base = f"{request.url.scheme}://{request.headers.get('host')}"
+        return f"{base}{image_value}"
+    return image_value
+
+
 def _delete_local_image_if_owned(image_path: Optional[str]) -> dict:
     """
     Delete an image file from disk if it resides under our uploads/products directory.
@@ -79,16 +99,20 @@ def _delete_local_image_if_owned(image_path: Optional[str]) -> dict:
 
 
 @router.get("/api/products", response_model=ApiResponse[List[ProductOut]])
-def list_products(db: Session = Depends(get_db)):
+def list_products(request: Request, db: Session = Depends(get_db)):
     products = db.query(Product).all()
-    return success_response(
-        "Products fetched successfully",
-        [ProductOut.model_validate(p) for p in products],
-    )
+    out: List[ProductOut] = []
+    for p in products:
+        item = ProductOut.model_validate(p)
+        # Resolve image to absolute URL for clients
+        item.image = _resolve_public_image_url(request, item.image)
+        out.append(item)
+    return success_response("Products fetched successfully", out)
 
 
 @router.post("/api/products", response_model=ApiResponse[ProductOut], status_code=status.HTTP_201_CREATED)
 def create_product(
+    request: Request,
     name: str = Form(...),
     price_per_kg: float = Form(..., alias="price_per_kg"),
     in_stock: bool = Form(True, alias="inStock"),
@@ -122,12 +146,15 @@ def create_product(
     db.add(product)
     db.commit()
     db.refresh(product)
-    return success_response("Product created successfully", ProductOut.model_validate(product))
+    created = ProductOut.model_validate(product)
+    created.image = _resolve_public_image_url(request, created.image)
+    return success_response("Product created successfully", created)
 
 
 @router.put("/api/products/{product_id}", response_model=ApiResponse[ProductOut])
 def update_product(
     product_id: str,
+    request: Request,
     payload: ProductUpdate,
     db: Session = Depends(get_db),
 ):
@@ -158,12 +185,15 @@ def update_product(
     db.add(product)
     db.commit()
     db.refresh(product)
-    return success_response("Product updated successfully", ProductOut.model_validate(product))
+    updated = ProductOut.model_validate(product)
+    updated.image = _resolve_public_image_url(request, updated.image)
+    return success_response("Product updated successfully", updated)
 
 
 @router.put("/api/products/{product_id}/image", response_model=ApiResponse[ProductOut])
 def update_product_image(
     product_id: str,
+    request: Request,
     image_file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):
@@ -175,7 +205,9 @@ def update_product_image(
     db.add(product)
     db.commit()
     db.refresh(product)
-    return success_response("Product image updated successfully", ProductOut.model_validate(product))
+    updated = ProductOut.model_validate(product)
+    updated.image = _resolve_public_image_url(request, updated.image)
+    return success_response("Product image updated successfully", updated)
 
 
 @router.delete("/api/products/{product_id}", response_model=ApiResponse[dict])
