@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+import os
 from app.db.session import engine
 from app.db.base import Base
 from app.routes import product, order, discount
@@ -30,6 +31,7 @@ app.include_router(order.router)
 app.include_router(discount.router)
 
 # To mount static files to server uploaded images
+os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Health check
